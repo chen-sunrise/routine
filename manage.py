@@ -16,6 +16,7 @@ Migrate(app, db)
 # 将数据库迁移脚本添加到脚本管理器
 manager.add_command('db', MigrateCommand)
 
+
 #
 # @app.route('/', methods=['GET', 'POST'])
 # def index():
@@ -31,4 +32,5 @@ manager.add_command('db', MigrateCommand)
 
 if __name__ == '__main__':
     # app.run()
+    print app.url_map
     manager.run()
