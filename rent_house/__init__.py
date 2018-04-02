@@ -8,6 +8,7 @@ from flask_wtf.csrf import CSRFProtect
 from config import configs
 # session在flask中的扩展包
 from flask_session import Session
+from rent_house.utils.common import RegexConverter
 
 # 创建可以被外界导入的数据库连接对象
 db = SQLAlchemy()
@@ -34,6 +35,17 @@ def get_app(config_name):
 
     # 开启CSRF保护
     CSRFProtect(app)
+
+    # 需要现有路由转换器，后面html_blue中才可以直接匹配
+    app.url_map.converters['re'] = RegexConverter
+
+    # 注册蓝图： 为了解决导入api时，还没有redis_store，造成的ImportError: cannot import name redis_store
+    from rent_house.api_1_0 import api
+    app.register_blueprint(api)
+
+    #注册静态html文件加载时的蓝图
+    from rent_house.web_html import html_blue
+    app.register_blueprint(html_blue)
 
     # 使用session在flask扩展实现将session数据存储在redis
     Session(app)
