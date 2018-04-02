@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
 
 import redis
-
+import logging
 
 class Config(object):
     '''加载配置'''
@@ -34,7 +34,9 @@ class Config(object):
 class DevelopmentConfig(Config):
     '''创建调试环境下的配置类'''
     # 我们的租房的房型，调试模式的配置和Config一致，所以pass
-    pass
+
+    # 如果是开发环境，日志等级就是DEBUG
+    LOGGIONG_LEVEL = logging.DEBUG
 
 
 class ProductionConfig(Config):
@@ -43,6 +45,8 @@ class ProductionConfig(Config):
     # 重写有差异的配置
     SQLALCHEMY_DATABASE_URI = 'mysql://root:mysql@172.0.0.1:3306/test_01'
 
+    # 如果是生产环境，日志等级就是WARN
+    LOGGIONG_LEVEL = logging.WARN
 
 class UnittestConfig(Config):
     '''单元测试的配置'''

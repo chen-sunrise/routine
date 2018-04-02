@@ -1,0 +1,7 @@
+WARNING _internal.py:88  * Debugger is active!
+INFO _internal.py:88  * Debugger PIN: 565-799-011
+INFO _internal.py:88  * Detected change in '/home/python/py_dj/rent_house/manage.py', reloading
+WARNING _internal.py:88  * Debugger is active!
+INFO _internal.py:88  * Debugger PIN: 565-799-011
+ERROR manage.py:30 NODATA
+INFO _internal.py:88 127.0.0.1 - - [02/Apr/2018 21:44:54] "GET / HTTP/1.1" 200 -
