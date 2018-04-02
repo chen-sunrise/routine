@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
 
-from rent_house import get_app
+from rent_house import get_app, db, models
 from flask_script import Manager
 from flask_migrate import Migrate, MigrateCommand
 
@@ -9,6 +9,10 @@ app = get_app('development')
 
 # 让app和db在迁移时建立关联
 manager = Manager(app)
+
+# 让app和db在迁移时建立关联
+Migrate(app, db)
+
 # 将数据库迁移脚本添加到脚本管理器
 manager.add_command('db', MigrateCommand)
 

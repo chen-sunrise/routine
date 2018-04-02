@@ -17,7 +17,7 @@ class BaseModel(object):
 class User(BaseModel, db.Model):
     '''用户'''
 
-    __tablename__ = "ih_user_profile"
+    __tablename__ = "user_profile"
 
     id = db.Column(db.Integer, primary_key=True) # 用户编号
     name = db.Column(db.String(32), unique=True, nullable=False) # 用户昵称
@@ -33,7 +33,7 @@ class User(BaseModel, db.Model):
 class Area(BaseModel, db.Model):
     """城区"""
 
-    __tablename__ = "ih_area_info"
+    __tablename__ = "area_info"
 
     id = db.Column(db.Integer, primary_key=True)  # 区域编号
     name = db.Column(db.String(32), nullable=False)  # 区域名字
@@ -49,19 +49,19 @@ class Area(BaseModel, db.Model):
 
 # 房屋设施表，建立房屋与设施的多对多关系
 house_facility = db.Table(
-    "ih_house_facility",
-    db.Column("house_id", db.Integer, db.ForeignKey("ih_house_info.id"), primary_key=True),  # 房屋编号
-    db.Column("facility_id", db.Integer, db.ForeignKey("ih_facility_info.id"), primary_key=True)  # 设施编号
+    "house_facility",
+    db.Column("house_id", db.Integer, db.ForeignKey("house_info.id"), primary_key=True),  # 房屋编号
+    db.Column("facility_id", db.Integer, db.ForeignKey("facility_info.id"), primary_key=True)  # 设施编号
 )
 
 class House(BaseModel, db.Model):
     """房屋信息"""
 
-    __tablename__ = "ih_house_info"
+    __tablename__ = "house_info"
 
     id = db.Column(db.Integer, primary_key=True)  # 房屋编号
-    user_id = db.Column(db.Integer, db.ForeignKey("ih_user_profile.id"), nullable=False)  # 房屋主人的用户编号
-    area_id = db.Column(db.Integer, db.ForeignKey("ih_area_info.id"), nullable=False)  # 归属地的区域编号
+    user_id = db.Column(db.Integer, db.ForeignKey("user_profile.id"), nullable=False)  # 房屋主人的用户编号
+    area_id = db.Column(db.Integer, db.ForeignKey("area_info.id"), nullable=False)  # 归属地的区域编号
     title = db.Column(db.String(64), nullable=False)  # 标题
     price = db.Column(db.Integer, default=0)  # 单价，单位：分
     address = db.Column(db.String(512), default="")  # 地址
@@ -147,7 +147,7 @@ class House(BaseModel, db.Model):
 class Facility(BaseModel, db.Model):
     """设施信息"""
 
-    __tablename__ = "ih_facility_info"
+    __tablename__ = "facility_info"
 
     id = db.Column(db.Integer, primary_key=True)  # 设施编号
     name = db.Column(db.String(32), nullable=False)  # 设施名字
@@ -156,21 +156,21 @@ class Facility(BaseModel, db.Model):
 class HouseImage(BaseModel, db.Model):
     """房屋图片"""
 
-    __tablename__ = "ih_house_image"
+    __tablename__ = "house_image"
 
     id = db.Column(db.Integer, primary_key=True)
-    house_id = db.Column(db.Integer, db.ForeignKey("ih_house_info.id"), nullable=False)  # 房屋编号
+    house_id = db.Column(db.Integer, db.ForeignKey("house_info.id"), nullable=False)  # 房屋编号
     url = db.Column(db.String(256), nullable=False)  # 图片的路径
 
 
 class Order(BaseModel, db.Model):
     """订单"""
 
-    __tablename__ = "ih_order_info"
+    __tablename__ = "order_info"
 
     id = db.Column(db.Integer, primary_key=True)  # 订单编号
-    user_id = db.Column(db.Integer, db.ForeignKey("ih_user_profile.id"), nullable=False)  # 下订单的用户编号
-    house_id = db.Column(db.Integer, db.ForeignKey("ih_house_info.id"), nullable=False)  # 预订的房间编号
+    user_id = db.Column(db.Integer, db.ForeignKey("user_profile.id"), nullable=False)  # 下订单的用户编号
+    house_id = db.Column(db.Integer, db.ForeignKey("house_info.id"), nullable=False)  # 预订的房间编号
     begin_date = db.Column(db.DateTime, nullable=False)  # 预订的起始时间
     end_date = db.Column(db.DateTime, nullable=False)  # 预订的结束时间
     days = db.Column(db.Integer, nullable=False)  # 预订的总天数
