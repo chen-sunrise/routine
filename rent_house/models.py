@@ -38,6 +38,9 @@ class User(BaseModel, db.Model):
         # value 是外界传入的密码的明文数据
         self.password_hash = generate_password_hash(value)
 
+    def check_password(self, password):
+        return check_password_hash(self.password_hash,password)
+
 
 class Area(BaseModel, db.Model):
     """城区"""

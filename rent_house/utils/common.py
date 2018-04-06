@@ -32,6 +32,6 @@ def login_required(view_func):
         else:
             # 表示用户已登录，使用g变量保存住user_id,方便在view_func调用的时候，内部可以直接使用g变量里面的user_id
             g.user_id = user_id
-            
+
         return view_func(*args, **kwargs)
     return wraaper

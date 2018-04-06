@@ -4,9 +4,66 @@ from rent_house import redis_store, db
 from rent_house.utils.response_code import RET
 from . import api
 from rent_house.models import User
-from flask import request, jsonify, current_app
+from flask import request, jsonify, current_app, session
 import json
+import re
 
+
+
+def logout():
+    '''实现退出登录
+    '''
+
+    session.pop('user_id')
+    session.pop('name')
+    session.pop('mobile')
+
+    return jsonify(errno=RET.OK, errmsg='退出登录成功')
+
+
+
+@api.route('/sessions', methods=['POST'])
+def login():
+    '''
+    实现登录
+    1.接受请求参数：手机号，明文密码
+    2.判断是否缺少参数，并做手机号格式校验
+    3.使用手机号查询该要登录的用户数据是否登录
+    4.对密码进行校验
+    5.将用户的状态保持信息写入session
+    6.响应登录结果
+    :return:
+    '''
+
+    # 1.接受请求参数：手机号，明文密码
+    json_dict = request.json
+    mobile = json_dict.get('mobile')
+    password = json_dict.get('password')
+
+    # 判断是否缺少参数，并做手机号的验证
+    if not all([mobile, password]):
+        return jsonify(errno=RET.PARAMERR, errmsg='缺少参数')
+    # 做手机号格式校验
+    if not re.match(r'^1[345678][0-9]{9}$', mobile):
+        return jsonify(errno=RET.PARAMERR, errmsg='缺少参数')
+
+    # 3.使用手机号查询该要登录的用户数据是否登录
+    try:
+        user = User.query.filter(User.mobile == mobile).first()
+    except Exception as e:
+        current_app(e)
+        return jsonify(errno=RET.DBERR,errmsg='查询用户失败')
+    # 4.对密码进行校验
+    if not user.check_password(password):
+        return jsonify(errno=RET.PWDERR, errmsg='用户或密码错误')
+
+    # 5.将用户的状态保持信息写入session
+    session['user_id'] = user.id
+    session['name'] = user.name
+    session['mobile'] = user.mobile
+
+    # 6.响应登录结果
+    return jsonify(errno=RET.OK, errmsg='登录成功')
 
 
 @api.route('/users', methods=['POST'])
