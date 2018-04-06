@@ -3,7 +3,7 @@
 from rent_house import get_app, db, models
 from flask_script import Manager
 from flask_migrate import Migrate, MigrateCommand
-
+from flask import current_app
 # 创建app
 app = get_app('development')
 
@@ -27,7 +27,7 @@ manager.add_command('db', MigrateCommand)
 #     # 测试session:flask自带的session模块，用于存储session
 #     # from flask import session
 #     # session['name'] = 'sz07sz07'
-#
+#     current_app.logger.error('NODATA')
 #     return 'index'
 
 if __name__ == '__main__':
