@@ -1,6 +1,9 @@
 # -*- coding:utf-8 -*-
 
 from werkzeug.routing import BaseConverter
+from flask import session, jsonify, g
+
+from rent_house.utils.response_code import RET
 
 
 class RegexConverter(BaseConverter):
@@ -10,3 +13,25 @@ class RegexConverter(BaseConverter):
         super(RegexConverter, self).__init__(url_map)
 
         self.regex = args[0]
+
+
+
+def login_required(view_func):
+    '''校验用户是否登陆用户'''
+
+
+    # 装饰器装饰一个函数时，会修改该函数的__name__属性
+    # 如果希望装饰器装饰之后的函数，依然保留原始的名字和说明文档，就需要用wraps装饰器，装饰内部函数
+
+    def wraaper(*args, **kwargs):
+
+        user_id = session.get('user_id')
+
+        if not user_id:
+            return jsonify(errno=RET.SESSIONERR, errmsg='用户未登录')
+        else:
+            # 表示用户已登录，使用g变量保存住user_id,方便在view_func调用的时候，内部可以直接使用g变量里面的user_id
+            g.user_id = user_id
+            
+        return view_func(*args, **kwargs)
+    return wraaper
