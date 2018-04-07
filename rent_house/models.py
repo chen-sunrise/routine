@@ -39,8 +39,25 @@ class User(BaseModel, db.Model):
         self.password_hash = generate_password_hash(value)
 
     def check_password(self, password):
-        return check_password_hash(self.password_hash,password)
+        return check_password_hash(self.password_hash, password)
 
+    def to_dict(self):
+        """封装要响应的字典"""
+        response_data = {
+            'avatar_url': constants.QINIU_DOMIN_PREFIX + (self.avatar_url if self.avatar_url else ""),
+            'name': self.name,
+            'mobile': self.mobile,
+            'user_id': self.id
+        }
+        return response_data
+
+    def auth_to_dict(self):
+        '''封装用户认证展示的数据'''
+        response_data = {
+            'real_name':self.real_name,
+            'id_card':self.id_card
+        }
+        return response_data
 
 class Area(BaseModel, db.Model):
     """城区"""
