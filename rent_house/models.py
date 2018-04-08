@@ -149,14 +149,14 @@ class House(BaseModel, db.Model):
         # 房屋图片
         img_urls = []
         for image in self.images:
-            img_urls.append(constants.QINIU_DOMIN_PREFIX + img_urls)
-        house_dict['img_urls'] = img_urls
+            img_urls.append(constants.QINIU_DOMIN_PREFIX + image.url)
+        house_dict["img_urls"] = img_urls
 
         # 房屋设置
         facilities = []
         for facility in self.facilities:
             facilities.append(facility.id)
-        house_dict['facilities'] = facilities
+        house_dict["facilities"] = facilities
 
         # 评论信息
         comments = []
@@ -169,8 +169,8 @@ class House(BaseModel, db.Model):
                 'ctime': order.update_time.strftime('%Y-%m-%d %H:%M:%S') # 评论的时间
             }
             comments.append(comment)
-            house_dict['comments'] = constants
-            return house_dict
+        house_dict['comments'] = comments
+        return house_dict
 
 
 class Facility(BaseModel, db.Model):
