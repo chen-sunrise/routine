@@ -41,7 +41,7 @@ $(document).ready(function(){
             var html_detail = template('house-detail-tmpl', {'house':response.data.house});
             $('.detail-con').html(html_detail);
 
-            // 实现即可预定按钮的显示逻辑
+            // a
             // response.data.house.user_id : 获取当前正在看的房屋信息的发布者是谁
             if (response.data.house.user_id != response.data.login_user_id) {
                 // 当前查看详情的用户不是登录用户 展示即可预定按钮

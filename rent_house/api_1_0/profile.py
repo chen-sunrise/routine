@@ -4,7 +4,7 @@ from rent_house.utils.common import login_required
 from rent_house.utils.response_code import RET
 from . import api
 from rent_house import db, constants
-from flask import jsonify, current_app, g, request
+from flask import jsonify, current_app, g, request, session
 from rent_house.models import User
 from rent_house.utils.image_storage import upload_image
 
@@ -124,6 +124,9 @@ def set_user_name():
         current_app.logger.error(e)
         db.session.rollback()
         return jsonify(errno=RET.DBERR,errmsg='存储用户名失败')
+
+    # 修改用户名时，需要修改session里面的name
+    session['name'] = new_name
 
     # 6.响应结果
     return jsonify(errno=RET.OK, errmsg='修改用户名成功')
