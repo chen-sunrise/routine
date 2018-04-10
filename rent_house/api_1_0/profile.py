@@ -5,8 +5,9 @@ from rent_house.utils.response_code import RET
 from . import api
 from rent_house import db, constants
 from flask import jsonify, current_app, g, request, session
-from rent_house.models import User
+from rent_house.models import User, House
 from rent_house.utils.image_storage import upload_image
+
 
 
 @api.route('/users/auth', methods=['GET'])

@@ -3,11 +3,149 @@
 
 from rent_house import redis_store, constants, db
 from flask import jsonify, current_app, request, g, session
-from rent_house.models import Area, House, HouseImage, Facility
+from rent_house.models import Area, House, HouseImage, Facility, Order
 from rent_house.utils.common import login_required
 from rent_house.utils.image_storage import upload_image
 from rent_house.utils.response_code import RET
 from . import api
+import datetime
+
+
+@api.route('/houses/search')
+def get_houses_search():
+    '''搜索房屋列表
+    1.查询所有的房屋信息
+    2.构造响应数据
+    3.响应结果'''
+
+    # current_app.logger.debug(request.args)
+
+    # 获取地区参数
+    aid = request.args.get('aid')
+    # 获取排序参数: new:最新，按照发布时间倒序; booking:订单量，安装订单量倒序；price-inc 价格低到高；price-des 价格高到低
+    sk = request.args.get('sk')
+    # 获取用户传入的页码
+    p = request.args.get('p', '1')  # 如果不传，默认第一页
+    # 获取入住时间
+    sd = request.args.get('sd', '')  # u'2018-04-07'
+    # 获取离开时间
+    ed = request.args.get('ed', '')  # u'2018-04-08'
+
+    start_date = None
+    end_date = None
+
+    # 校验参数
+    try:
+        p = int(p)
+
+        if sd:
+            # 将时间字符串转成时间对象
+            start_date = datetime.datetime.strptime(sd, '%Y-%m-%d')
+        if ed:
+            # 将时间字符串转成时间对象
+            end_date = datetime.datetime.strptime(ed, '%Y-%m-%d')
+        # 自己校验入住时间是否小于离开的时间
+        if start_date and end_date:
+            # 断言：入住时间一定小于离开时间，如果不满足，就抛出异常
+            assert start_date < end_date, Exception('入住时间有误')
+
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.PARAMERR, errmsg='参数有误')
+
+    # 在查询数据之前，读取缓存数据
+    try:
+        name = 'house_list_%s_%s_%s_%s' % (aid, sd, ed, sk)
+        response_data = redis_store.hget(name, p)
+        return jsonify(errno=RET.OK, errmsg='OK', data=eval(response_data))
+    except Exception as e:
+        current_app.logger.error(e)
+
+    # 1.查询所有的房屋信息 houses == [House,House,House,...]
+    try:
+        # 无条件查询所有房屋数据
+        # houses = House.query.all()
+
+        # 得到BaseQuery对象，保存即将要查询出来的数据
+        house_query = House.query
+
+        # 根据用户选中的城区信息，筛选出满足条件的房屋信息
+        if aid:
+            house_query = house_query.filter(House.area_id == aid)
+
+        # 根据用户传入的入住时间和离开的时间，跟订单里面的时间进行对比
+        # 如果用户传入的时间段，在订单中，也存在，就把满足冲突条件的订单查询出来 conflict_orders
+        conflict_orders = []
+        if start_date and end_date:
+            conflict_orders = Order.query.filter(end_date > Order.begin_date, start_date < Order.end_date).all()
+        elif start_date:
+            conflict_orders = Order.query.filter(start_date < Order.end_date).all()
+        elif end_date:
+            conflict_orders = Order.query.filter(end_date > Order.begin_date).all()
+
+        # 再通过冲突的订单，查询出里面的house_id,封装到列表中 conflict_house_ids
+        if conflict_orders:
+            conflict_house_ids = [order.house_id for order in conflict_orders]
+            # 最后在查询House是，not_in(conflict_house_ids)
+            house_query = house_query.filter(House.id.notin_(conflict_house_ids))
+
+        # 根据排序规则对数据进行排序
+        if sk == 'booking':
+            house_query = house_query.order_by(House.order_count.desc())
+        elif sk == 'price-inc':
+            house_query = house_query.order_by(House.price.asc())
+        elif sk == 'price-des':
+            house_query = house_query.order_by(House.price.desc())
+        else:
+            house_query = house_query.order_by(House.create_time.desc())
+
+        # 无条件的从BaseQuery对象中取出数据
+        # houses = house_query.all()
+
+        # 需要使用分页功能，避免一次性查询所有数据，使用分页代码，替换all()
+        # 每页两条数据 paginate == 一本书，书里面有好多页
+        paginate = house_query.paginate(p, constants.HOUSE_LIST_PAGE_CAPACITY, False)
+        # 获取当前页的房屋模型对象 houses == [House, House],
+        houses = paginate.items
+        # 获取一共分了多少页，一定要传给前端
+        total_page = paginate.pages
+
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg='查询房屋信息失败')
+
+    # 2.构造响应数据
+    house_dict_list = []
+    for house in houses:
+        house_dict_list.append(house.to_basic_dict())
+
+    # 提示：如果重新构造了响应数据，需要把之前前端界面的house_dict_list的获取修改一下response.data.houses
+    response_data = {
+        'houses': house_dict_list,
+        'total_page': total_page
+    }
+
+    # 缓存房屋列表数据
+    try:
+        name = 'house_list_%s_%s_%s_%s' % (aid, sd, ed, sk)
+
+        # 创建redis管道:用于存放后面的所有的redis操作的，看做一整整体
+        pipeline = redis_store.pipeline()
+        # 开启事务
+        pipeline.multi()
+
+        # 需要看做整体的redis操作
+        redis_store.hset(name, p, response_data)
+        redis_store.expire(name, constants.HOUSE_LIST_REDIS_EXPIRES)
+
+        # 执行/提交事务
+        pipeline.execute()
+    except Exception as e:
+        current_app.logger.error(e)
+        # redis发现异常，不需要手动回滚
+
+    # 3.响应结果
+    return jsonify(errno=RET.OK, errmsg='OK', data=response_data)
 
 
 @api.route('/houses/detail/<int:house_id>')

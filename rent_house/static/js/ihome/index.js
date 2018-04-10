@@ -42,7 +42,7 @@ function setEndDate() {
     }
     $("#end-date-modal").modal("hide");
 }
-
+// 主页界面上搜索标签的点击事件
 function goToSearchPage(th) {
     var url = "/search.html?";
     url += ("aid=" + $(th).attr("area-id"));

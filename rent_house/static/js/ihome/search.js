@@ -45,14 +45,47 @@ function updateHouseData(action) {
         p:next_page
     };
     // TODO: 获取房屋列表信息
+    // 参数1：请求地址； 参数2：请求参数（可选的，如果有就传入，没有就省略）；参数3：请求完成后的回调
+    // params:存储的是要通过GET请求发送给服务器的字符串信息
+    // http://127.0.0.1:5000/search.html?aid=2&aname=&sd=&ed=
+    $.get('/api/1.0/houses/search', params, function (response) {
+        // 能够进入到回调，说明上次的请求结束，需要将 house_data_querying = false
+            house_data_querying = false;
+
+        if (response.errno == '0'){
+
+
+
+            // 后端需要将总 页返回给前端并保存 total_page
+            total_page = response.data.total_page;
+
+            // 使用art-template模板引擎，生成需要渲染的html内容
+            var html = template('house-list-tmpl', {'houses':response.data.houses});
+
+            // 区分是上拉刷新，还是加载新的数据，要区分用户是直接加载的数据还是上拉刷新 action == renew 表示重新加载新的数据
+            if(action == 'renew'){
+                // 加载新的数据，将html渲染到界面
+                $('.house-list').html(html);
+            }else {
+                // 每次上拉刷新成功后，需要对 cur_page累加1
+                cur_page = next_page;
+
+                // 上拉刷新，上拉刷新得到新的数据时，不要覆盖上一页的数据
+                $('.house-list').append(html);
+            }
+
+        }else {
+            alert(response.errmsg);
+        }
+    });
 }
 
 $(document).ready(function(){
     var queryData = decodeQuery();
     var startDate = queryData["sd"];
     var endDate = queryData["ed"];
-    $("#start-date").val(startDate); 
-    $("#end-date").val(endDate); 
+    $("#start-date").val(startDate);
+    $("#end-date").val(endDate);
     updateFilterDateDisplay();
     var areaName = queryData["aname"];
     if (!areaName) areaName = "位置区域";
@@ -60,7 +93,7 @@ $(document).ready(function(){
 
 
     // 获取筛选条件中的城市区域信息
-    $.get("/api/v1.0/areas", function(data){
+    $.get("/api/1.0/areas", function(data){
         if ("0" == data.errno) {
             var areaId = queryData["aid"];
             if (areaId) {
@@ -77,9 +110,11 @@ $(document).ready(function(){
                     $(".filter-area").append('<li area-id="'+ data.data[i].aid+'">'+ data.data[i].aname+'</li>');
                 }
             }
+
             // 在页面添加好城区选项信息后，更新展示房屋列表信息
             updateHouseData("renew");
-            var windowHeight = $(window).height()
+
+            var windowHeight = $(window).height();
             // 为窗口的滚动添加事件函数
             window.onscroll=function(){
                 // var a = document.documentElement.scrollTop==0? document.body.clientHeight : document.documentElement.clientHeight;
