@@ -9,6 +9,33 @@ from rent_house.models import User, House
 from rent_house.utils.image_storage import upload_image
 
 
+@api.route('/users/houses')
+@login_required
+def get_user_houses():
+    '''获取我的房源
+    1.获取当前登录用户的user_id
+    2.使用user_id查询该登录用户发布的所有的房源
+    3.构造响应数据
+    4.响应结果'''
+
+    # 1.获取当前登录用户的user_id
+    user_id = g.user_id
+
+    # 2.使用user_id查询该登录用户发布的所有的房源
+    try:
+        houses = House.query.filter(House.user_id == user_id).all()
+    except Exception as e:
+        current_app.logger.error(e)
+        return jsonify(errno=RET.DBERR, errmsg='查询房屋信息失败')
+
+    # 构造响应数据
+    houses_dict_list = []
+    for house in houses:
+        houses_dict_list.append(house.to_basic_dict())
+
+    return jsonify(errno=RET.OK,errmsg='OK', data=houses_dict_list)
+
+
 
 @api.route('/users/auth', methods=['GET'])
 @login_required

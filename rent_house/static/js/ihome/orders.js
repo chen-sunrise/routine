@@ -18,11 +18,13 @@ $(document).ready(function(){
     $('.modal').on('show.bs.modal', centerModals);      //当模态框出现的时候
     $(window).on('resize', centerModals);
 
-    // TODO: 查询房客订单
+    // TODO: 查询我的订单
     $.get('/api/1.0/orders?role=custom', function (response) {
-        if(response.errno == '0'){
+        if (response.errno == '0') {
+            // 渲染我的订单界面
             var html = template('orders-list-tmpl', {'orders':response.data});
             $('.orders-list').html(html);
+
 
             // TODO: 查询成功之后需要设置评论的相关处理
             $(".order-comment").on("click", function(){
@@ -58,13 +60,10 @@ $(document).ready(function(){
                 });
             });
 
-
-        }else if(response.errno == '4101'){
+        } else if (response.errno == '4101') {
             location.href = '/';
-        }else {
+        } else {
             alert(response.errmsg);
         }
-    })
-
-
+    });
 });

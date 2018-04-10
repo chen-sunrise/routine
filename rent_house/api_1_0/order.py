@@ -46,7 +46,7 @@ def set_order_comment(order_id):
         db.session.rollback()
         return jsonify(errno=RET.DBERR, errmsg='保存订单数据失败')
 
-    return jsonify(errno=RET.OK, errmsg='OK')
+    return jsonify(errno=RET.O)
 
 
 @api.route('/orders/<int:order_id>', methods=['PUT'])
@@ -92,41 +92,47 @@ def set_order_status(order_id):
         order.comment = reason # 一旦被拒单，就无法评价，可以使用一个字段复用
 
     # 4.更新数据到数据库
-        try:
-            db.session.commit()
-        except Exception as e:
-            current_app.logger.error(e)
-            db.session.rollback()
-            return jsonify(errno=RET.DBERR, errmsg='数据更新失败')
+    try:
+        db.session.commit()
+    except Exception as e:
+        current_app.logger.error(e)
+        db.session.rollback()
+        return jsonify(errno=RET.DBERR, errmsg='数据更新失败')
 
     # 5.响应结果
-        return jsonify(errno=RET.OK, errmsg='OK')
+    return jsonify(errno=RET.OK, errmsg='OK')
 
 
 @api.route('/orders')
 @login_required
 def get_order_list():
-    '''获取我的订单
+    """获取我的订单
     0.判断是否登录
-    1.获取参数:user_id
+    1.获取参数：user_id = g.user_id
     2.查询该登录用户的所有的订单信息
     3.构造响应数据
-    4.响应结果'''
-
+    4.响应结果
+    """
 
     # 获取用户身份信息
     role = request.args.get('role')
     if role not in ['custom', 'landlord']:
         return jsonify(errno=RET.PARAMERR, errmsg='缺少必传参数')
 
-    # 1.获取参数
-    user_id =g.user_id
+    # 1.获取参数：user_id = g.user_id
+    user_id = g.user_id
 
     # 2.查询该登录用户的所有的订单信息
     try:
-        houses = Order.query.filter(Order.user_id == user_id).all()
-        house_ids = [house.id for house in houses]
-        orders = Order.query.filter(Order.house_id.in_(house_ids)).all()
+        if role == 'custom':
+            orders = Order.query.filter(Order.user_id==user_id).all()
+        else:
+            # 查询该登录用户发布的房屋信息
+            houses = House.query.filter(House.user_id==user_id).all()
+            # 获取发布的房屋的ids
+            house_ids = [house.id for house in houses]
+            # 从订单中查询出订单中的house_id在house_ids
+            orders = Order.query.filter(Order.house_id.in_(house_ids)).all()
     except Exception as e:
         current_app.logger.error(e)
         return jsonify(errno=RET.DBERR, errmsg='查询订单失败')
@@ -136,8 +142,8 @@ def get_order_list():
     for order in orders:
         order_dict_list.append(order.to_dict())
 
-    # 4. 响应结果
-    return jsonify(errno=RET.OK, errmsg='OK', data=order_dict_list)
+    # 4.响应结果
+    return jsonify(errno=RET.OK, errmsg='OK',data=order_dict_list)
 
 
 
