@@ -34,5 +34,4 @@ class LoginRequiredMixin(object):
     def as_view(cls, **initkwargs):
         view = super().as_view(**initkwargs)
 
-        # 登陆验证
         return login_required(view)

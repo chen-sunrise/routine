@@ -6,13 +6,13 @@ from django.http import HttpResponse
 from django.core.mail import send_mail
 from django.views.generic import View
 from django.contrib.auth import authenticate, login, logout
-from utils.maxin import LoginRequiredMixin, LoginRequiredView
+from utils.mixin import LoginRequiredMixin, LoginRequiredView
 
-
+from django_redis import get_redis_connection
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from itsdangerous import SignatureExpired
 from django.conf import settings
-
+from goods.models import GoodsSKU
 
 # Create your views here.
 
@@ -259,10 +259,45 @@ class LogoutView(View):
 
 # /user/
 class UserInfoView(LoginRequiredMixin, View):
-    '''用户中心页面'''
+    '''用户中心-信息页面'''
     def get(self, request):
+        '''显示'''
 
-        return render(request, 'user_center_info.html', {'page':'user'})
+        # 获取登录用户
+        user = request.user
+
+        # 获取用户的默认收货地址
+        # from redis import StrictRedis
+        # conn = StrictRedis(host='192.168.235.131', port='6379', db='4')
+
+        address = Address.objects.get_default_address(user)
+
+        # 返回StrictRedis类的对象
+        conn = get_redis_connection('default')
+
+        # 拼接key
+        history_key = 'history_%d' % user.id
+
+        # lrange(key, start, stop) 返回是列表
+        # 获取用户最新浏览的5个商品的id
+        sku_ids = conn.lrange(history_key, 0, 4)
+
+        skus = []
+        for sku_id in sku_ids:
+            # 根据商品的id查询商品的信息
+            sku = GoodsSKU.objects.get(id=sku_id)
+            # 追加到skus列表中
+            skus.append(sku)
+
+        # 组织模板上下文
+        context = {
+            'address': address,
+            'skus': skus,
+            'page': 'user'
+        }
+
+
+        return render(request, 'user_center_info.html', context)
 
 
 # /user/order
@@ -281,10 +316,13 @@ class UserSiteView(LoginRequiredMixin, View):
         # 获取登录用户
         user = request.user
 
-        try:
-            address = Address.objects.get(user=user, is_default=True)
-        except Address.DoesNotExist:
-            address = None
+        # try:
+        #     address = Address.objects.get(user=user, is_default=True)
+        # except Address.DoesNotExist:
+        #     address = None
+
+        address = Address.objects.get_default_address(user)
+
         # 组织模板
         context = {
             'page': 'address',
@@ -309,10 +347,12 @@ class UserSiteView(LoginRequiredMixin, View):
         # 业务处理：添加收货地址
 
         user = request.user
-        try:
-            address = Address.objects.get(user=user, is_default=True)
-        except Address.DoesNotExist:
-            address = None
+        # try:
+        #     address = Address.objects.get(user=user, is_default=True)
+        # except Address.DoesNotExist:
+        #     address = None
+
+        address = Address.objects.get_default_address(user)
 
         is_default = True
         if address is not None:
@@ -328,4 +368,7 @@ class UserSiteView(LoginRequiredMixin, View):
             is_default =is_default,
         )
 
-        return redirect(receiver('user:address'))
+        return redirect(reverse('user:address'))
+
+
+
